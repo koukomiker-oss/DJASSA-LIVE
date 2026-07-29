@@ -1,0 +1,6 @@
+{
+  "name": "Djassa Live V6",
+  "description": "Une application de shopping en direct avec capture d'écran, paiements mobiles et tableau de bord vendeuse.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}

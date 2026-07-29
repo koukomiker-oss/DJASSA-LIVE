@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'phoneNumber', 'role']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 50 &&
+             data.phoneNumber is string && data.phoneNumber.size() <= 20 &&
+             data.role in ['buyer', 'seller'];
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'sellerId', 'buyerId', 'amount', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.sellerId is string && data.buyerId is string &&
+             data.amount is number && data.amount > 0 &&
+             data.status in ['pending', 'completed', 'cancelled'];
+    }
+
+    function isValidVideo(data) {
+      return data.keys().hasAll(['id', 'sellerId', 'sellerName', 'sellerAvatar', 'videoUrl', 'caption', 'createdAt', 'completionRate', 'shareCount', 'viewCount', 'products', 'tags', 'stickers']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.sellerId is string && data.sellerId.size() <= 128 &&
+             data.videoUrl is string && data.videoUrl.size() <= 500 &&
+             data.caption is string && data.caption.size() <= 500 &&
+             data.createdAt is number &&
+             data.shareCount is number &&
+             data.viewCount is number;
+    }
+
+    // Rules
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /videos/{videoId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && 
+                    request.resource.data.sellerId == request.auth.uid &&
+                    isValidVideo(request.resource.data);
+      allow update: if isSignedIn() && (
+        // Seller can update their own video
+        (resource.data.sellerId == request.auth.uid && isValidVideo(request.resource.data)) ||
+        // System metrics updates: Allow ANYONE to increment metrics
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareCount', 'viewCount', 'completionRate']) && 
+         isValidVideo(request.resource.data))
+      );
+      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    match /seller_analytics/{sellerId} {
+      allow read: if isSignedIn() && request.auth.uid == sellerId;
+      allow write: if isSignedIn() && request.auth.uid == sellerId;
+    }
+
+    match /seller_live_config/{sellerId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == sellerId;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+                      request.resource.data.id == resource.data.id;
+    }
+
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid
+      );
+      allow list: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid
+      );
+      allow create: if isSignedIn() && 
+                    request.resource.data.buyerId == request.auth.uid &&
+                    isValidOrder(request.resource.data);
+      allow update: if isSignedIn() && 
+                    resource.data.sellerId == request.auth.uid &&
+                    isValidOrder(request.resource.data) &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+
+    match /lives/{liveId} {
+      allow get: if true;
+      allow list: if true; 
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.sellerId;
+      allow update: if isSignedIn() && request.auth.uid == resource.data.sellerId &&
+                      request.resource.data.sellerId == resource.data.sellerId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.sellerId;
+    }
+  }
+}

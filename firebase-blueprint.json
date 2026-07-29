@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a buyer or seller on the platform.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "role": { "type": "string", "enum": ["buyer", "seller"] },
+        "bio": { "type": "string" },
+        "location": { "type": "string" },
+        "rating": { "type": "number" },
+        "avatar": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "phoneNumber", "role"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents a purchase or deposit made during a live session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "productName": { "type": "string" },
+        "productImage": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "method": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "receipt": { "type": "string" }
+      },
+      "required": ["id", "sellerId", "buyerId", "amount", "status"]
+    },
+    "LiveSession": {
+      "title": "Live Session",
+      "description": "Represents an active broadcast by a seller.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "sellerAvatar": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "ended"] },
+        "viewers": { "type": "number" },
+        "startedAt": { "type": "number" },
+        "peakViewers": { "type": "number" },
+        "totalSales": { "type": "number" }
+      },
+      "required": ["id", "sellerId", "status"]
+    },
+    "VideoPost": {
+      "title": "Video Post",
+      "description": "A recorded video posted by a seller.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "viewCount": { "type": "number" },
+        "shareCount": { "type": "number" },
+        "completionRate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "SellerAnalytics": {
+      "title": "Seller Analytics",
+      "description": "Aggregated performance data for a seller.",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "totalRevenue": { "type": "number" },
+        "totalLives": { "type": "number" },
+        "totalVideoViews": { "type": "number" },
+        "dailyStats": { "type": "array" }
+      }
+    },
+    "SellerLiveConfig": {
+      "title": "Seller Live Config",
+      "description": "Customizable settings for a seller's live stream.",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "simulatedViewers": { "type": "number" },
+        "overlayImage": { "type": "string" },
+        "showLocation": { "type": "boolean" },
+        "filter": { "type": "string", "enum": ["none", "sepia", "grayscale", "warm"] },
+        "updatedAt": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles for buyers and sellers."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Transaction records."
+    },
+    "/lives/{liveId}": {
+      "schema": "LiveSession",
+      "description": "Active live broadcasts."
+    },
+    "/videos/{videoId}": {
+      "schema": "VideoPost",
+      "description": "Seller video posts."
+    },
+    "/seller_analytics/{sellerId}": {
+      "schema": "SellerAnalytics",
+      "description": "Aggregated stats for sellers."
+    },
+    "/seller_live_config/{sellerId}": {
+      "schema": "SellerLiveConfig",
+      "description": "Customizable settings for live broadcasts."
+    }
+  }
+}
